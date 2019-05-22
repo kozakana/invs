@@ -1,8 +1,14 @@
 # invs
 
-## Command Line
+## Installation
 ```
-$ ./invs <options>
+go get github.com/kozakana/invs
+```
+
+## Usage
+
+```
+$ invs <options>
 ```
 
 ## Options
