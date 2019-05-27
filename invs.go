@@ -9,7 +9,7 @@ import (
 )
 
 type options struct {
-	port, filterURL, proxyHost string
+	port, filterURL, proxyHost, excludeURL string
 }
 
 var opts = options{}
@@ -22,16 +22,28 @@ func setOptions() {
 	flag.StringVar(&opts.port, "p", "8080", "port")
 	flag.StringVar(&opts.proxyHost, "proxy-host", "", "port")
 	flag.StringVar(&opts.filterURL, "filter-url", "", "Output only URLs that contain the string")
+	flag.StringVar(&opts.excludeURL, "exclude-url", "", "Exclude output URLs that contain the string")
 	flag.Parse()
+}
+
+func displayURL(url string) bool {
+	if (opts.filterURL != "") && !strings.Contains(url, opts.filterURL) {
+		return false
+	}
+	if (opts.excludeURL != "") && strings.Contains(url, opts.excludeURL) {
+		return false
+	}
+
+	return true
 }
 
 func index(w http.ResponseWriter, request *http.Request) {
 	fmt.Fprintf(w, "200")
-	if !strings.Contains(request.URL.Path, opts.filterURL) {
-		return
+
+	if displayURL(request.URL.Path) {
+		dump, _ := httputil.DumpRequest(request, true)
+		fmt.Println(string(dump))
 	}
-	dump, _ := httputil.DumpRequest(request, true)
-	fmt.Println(string(dump))
 }
 
 func handler() *http.ServeMux {
@@ -44,7 +56,7 @@ func rpHandler() *httputil.ReverseProxy {
 	director := func(request *http.Request) {
 		request.URL.Scheme = "http"
 		request.URL.Host = opts.proxyHost
-		if strings.Contains(request.URL.Path, opts.filterURL) {
+		if displayURL(request.URL.Path) {
 			dump, _ := httputil.DumpRequest(request, true)
 			fmt.Println(string(dump))
 		}
